@@ -74,7 +74,7 @@ class BaseNet(object):
         for i in range(self.depth):
             w = self.layers[i + 1].init_weights(
                 self.rng, self.layers[i].n_outputs, self.layers[i+1].n_outputs)
-            self.layers[i + 1].set_weights(w)
+            # self.layers[i + 1].set_weights(w)
             weights.append(w)
         return weights
 
