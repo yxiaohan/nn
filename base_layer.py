@@ -9,23 +9,36 @@ class AbstractLayer(object):
     """
     abstract layer without weights or biases, or ceptron
     """
+    @staticmethod
+    def _set_data_shape(data_shape):
+        """
+        set the inputs and outputs shapes
+        """
+        if type(data_shape) is int:
+            data_shape = (data_shape,)
+        elif type(data_shape) is tuple:
+            pass
+        else:
+            raise ValueError('the data_shape must be a int or tuple!')
+
+        return data_shape
+
     def __init__(self, outputs_shape):
         """
         :type outputs_shape: int or tuple
         :argument outputs_shape: shape of ceptrons / outputs
         """
-        if type(outputs_shape) is int:
-            outputs_shape = (outputs_shape,)
-        elif type(outputs_shape) is tuple:
-            pass
-        else:
-            raise ValueError('the outputs_shape must be a int or tuple!')
-        n_outputs = np.prod(outputs_shape)
-        self.n_outputs = n_outputs
-        self.outputs_shape = outputs_shape
+        self.have_weights = False
+
+        self.outputs_shape = AbstractLayer._set_data_shape(outputs_shape)
+        # inputs shape will be set after the layer is connected in a network
+        self.inputs_shape = None
 
     def __repr__(self):
         return 'layer({!r}, {!r})'.format(type(self), self.outputs_shape)
+
+    def set_inputs_shape(self, inputs_shape):
+        self.inputs_shape = AbstractLayer._set_data_shape(inputs_shape)
 
     def forward(self, inputs):
         raise NotImplementedError
@@ -44,6 +57,7 @@ class CeptronLayer(AbstractLayer):
         if not isinstance(ceptron, Ceptron):
             print(type(ceptron))
             raise ValueError('ceptron must be a type of ceptron.Ceptron')
+        self.have_weights = True
         self.b = b
         self.w = w
 
@@ -54,20 +68,22 @@ class CeptronLayer(AbstractLayer):
         z = T.dot(inputs, self.w) + self.b
         return self.ceptron.core_func(z)
 
-    def init_weights(self, *args):
-        return self.ceptron.weights_init_func(*args)
+    def init_weights(self, rng):
+        n_inputs = np.prod(self.inputs_shape)
+        n_outputs = np.prod(self.outputs_shape)
+        self.w = self.ceptron.weights_init_func(rng, n_inputs, n_outputs)
 
     def init_biases(self):
-        return tu.shared_zeros(self.outputs_shape, 'b')
+        self.b = tu.shared_zeros(self.outputs_shape, 'b')
 
-    def set_weights(self, w):
-        self.w = w
-
-    def set_biases(self, b):
-        self.b = b
-
-    def get_weights(self):
-        return self.w
-
-    def get_biases(self):
-        return self.b
+    # def set_weights(self, w):
+    #     self.w = w
+    #
+    # def set_biases(self, b):
+    #     self.b = b
+    #
+    # def get_weights(self):
+    #     return self.w
+    #
+    # def get_biases(self):
+    #     return self.b

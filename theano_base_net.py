@@ -40,11 +40,16 @@ class BaseNet(object):
         :parameter layers: a list of tuple for init layers
         """
         self.layers = layers
+        self.weighted_layers = self.get_weighted_layers()
         self.rng = np.random.RandomState(1234)
-        self.depth = len(self.layers) - 1
+        self.depth = len(self.weighted_layers)
 
-        self.weights = self.init_weights()
-        self.biases = self.init_biases()
+        # set pickle file path
+        self.file_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+        self.pickle_file = conf.DATA_PATH + self.file_name + '.pkl'
+
+        self.connect()
+        self.reset_params()
 
         # l1 and l2 regularization
         self.l1, self.l2 = self.init_regularization()
@@ -53,7 +58,9 @@ class BaseNet(object):
         self.x = T.matrix('x')
         self.y = T.ivector('y')
         self.index = T.iscalar('index')
-        self.p_y = self.forward(self.x)
+
+        # self.load_params()
+        # self.p_y = self.forward(self.x)
 
         self.train_model = None
         self.valid_model = None
@@ -65,26 +72,27 @@ class BaseNet(object):
         self.patience_inc_coef = -0.1
         self.lest_valid_error = np.inf
 
-        # set pickle file path
-        self.file_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
-        self.pickle_file = conf.DATA_PATH + self.file_name + '.pkl'
+    def get_weighted_layers(self):
+        weighted_layers = []
+        for layer in self.layers:
+            if layer.have_weights:
+                weighted_layers.append(layer)
+        return weighted_layers
 
-    def init_weights(self):
-        weights = []
-        for i in range(self.depth):
-            w = self.layers[i + 1].init_weights(
-                self.rng, self.layers[i].n_outputs, self.layers[i+1].n_outputs)
-            # self.layers[i + 1].set_weights(w)
-            weights.append(w)
-        return weights
+    def connect(self):
+        for i, layer in enumerate(self.layers[:-1]):
+            self.layers[i+1].set_inputs_shape(layer.outputs_shape)
 
-    def init_biases(self):
-        return [layer.init_biases() for layer in self.layers[1:]]
+    def init_weights_baises(self):
+        for layer in self.weighted_layers:
+            layer.init_biases()
+            layer.init_weights(self.rng)
 
     def init_regularization(self):
         l1 = 0
         l2 = 0
-        for w in self.weights:
+        for layer in self.weighted_layers:
+            w = layer.w
             l1 += T.sum(abs(w))
             l2 += T.sum(w ** 2)
         # l2 = T.sqrt(l2)
@@ -96,27 +104,28 @@ class BaseNet(object):
         :return:
         """
         a = x
-        for w, b, layer in zip(self.weights, self.biases, self.layers[1:]):
-            z = T.dot(a, w) + b
-            a = layer.ceptron.core_func(z=z)
+        for layer in self.layers:
+            a = layer.forward(a)
         return a
 
     def set_train_model(self, train_set, cost_func, batch_size, learning_rate, l1_a=0.0, l2_a=0.0001):
+        self.p_y = self.forward(self.x)
+        cost = cost_func(self.p_y, self.y) + self.l1 * l1_a + self.l2 * l2_a
 
-        cost = cost_func(self.p_y, self.y) \
-               + self.l1 * l1_a + self.l2 * l2_a
+        # set early stopping patience
+        self.patience = 20
+        self.lest_valid_error = np.inf
 
         print('compiling train model..')
 
         # compute gradients of weights and biases
         updates = []
-        for i in range(self.depth):
-            g_w = T.grad(cost, self.weights[i])
-            g_b = T.grad(cost, self.biases[i])
-            updates += [(self.weights[i], self.weights[i] - learning_rate * g_w),
-                        (self.biases[i], self.biases[i] - learning_rate * g_b)]
+        for layer in self.weighted_layers:
+            g_w = T.grad(cost, layer.w)
+            g_b = T.grad(cost, layer.b)
+            updates += [(layer.w, layer.w - learning_rate * g_w),
+                        (layer.b, layer.b - learning_rate * g_b)]
 
-        # print(self.train_set[1:3])
         train_set_x, train_set_y = train_set
         index = self.index
         self.train_model = theano.function([index], cost, updates=updates, givens={
@@ -128,6 +137,7 @@ class BaseNet(object):
         tu.check_gpu(self.train_model)
 
     def set_valid_test_models(self, valid_set, test_set, errors):
+        print('setting valid and test models...')
         self.valid_model = self._set_model(valid_set, errors)
         self.test_model = self._set_model(test_set, errors)
 
@@ -149,7 +159,7 @@ class BaseNet(object):
         assert valid_error >= 0
         assert self.lest_valid_error >= 0
 
-        improvement_threshold = 0.0005
+        improvement_threshold = 0.05
         improvement = (self.lest_valid_error - valid_error) / valid_error
 
         result = False
@@ -167,33 +177,38 @@ class BaseNet(object):
         return result
 
     def reset_params(self):
-        self._set_weights_biases(self.init_weights(), self.init_biases())
+        self.init_weights_baises()
+        # self._set_weights_biases(*self._get_weights_biases())
 
     def save_params(self):
+        weights, biases = self._get_weights_biases()
         with open(self.pickle_file, 'wb') as f:
-            pickle.dump((self.weights, self.biases), f, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump((weights, biases), f, protocol=pickle.HIGHEST_PROTOCOL)
 
     def load_params(self):
         with open(self.pickle_file, 'rb') as f:
             params = pickle.load(f)
-        # _load_params = self._set_weights_biases(*params)
-        # _load_params()
         self._set_weights_biases(*params)
 
+    def _get_weights_biases(self):
+        weights = []
+        biases = []
+        for layer in self.weighted_layers:
+            weights.append(layer.w)
+            biases.append(layer.b)
+        return weights, biases
+
     def _set_weights_biases(self, weights, biases):
-        for i in range(self.depth):
-            self.weights[i].set_value(weights[i].get_value())
-            self.biases[i].set_value(biases[i].get_value())
+        for i, layer in enumerate(self.weighted_layers):
+            layer.w.set_value(weights[i].get_value())
+            layer.b.set_value(biases[i].get_value())
+
+        print('biases[1]:')
+        print(biases[1].get_value())
 
     def get_b(self):
-        print(self.biases[0].get_value())
-        print(self.weights[0].get_value())
-        _get_b = theano.function([], self.biases[0])
+        layer = self.weighted_layers[1]
+        print(layer.b.get_value())
+        # print(layer.w.get_value())
+        _get_b = theano.function([], layer.b)
         print(_get_b())
-
-    def _make_updates(self, weights, biases):
-        updates = []
-        for i in range(self.depth):
-            updates += [(self.weights[i], weights[i]),
-                        (self.biases[i], biases[i])]
-        return updates

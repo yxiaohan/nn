@@ -53,21 +53,25 @@ def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3,
     time_used = timer.stop().total_seconds()
     print('The code run for %d epochs, with %f epochs/sec' % (epoch_count, 1. * epoch_count / time_used))
     print('last test score:{0}'.format(last_test_score))
+    return valid_set, test_set
 
 
 def test():
     net = theano_base_net.BaseNet.net_from_layer_types((28,28), [(50, ceptron.Tanh()), (10, ceptron.TheanoSoftMax())])
-    # net.get_b()
+    net.get_b()
     # net.save_params()
-    train(net, 1000, 600, learning_rate=0.01)
+    valid_set, test_set = train(net, 1000, 600, learning_rate=0.01)
     print('after training:')
-    # net.get_b()
+    net.get_b()
+    print('test before reset:{0}'.format(net.test_model()))
     net.reset_params()
+
     print('test after reset:{0}'.format(net.test_model()))
-    # net.get_b()
+    net.get_b()
+    # train(net, 1000, 600, learning_rate=0.01)
     net.load_params()
     print('after loading:')
-    # net.get_b()
+    net.get_b()
     print('load best test:{0}'.format(net.test_model()))
     print('done')
 
