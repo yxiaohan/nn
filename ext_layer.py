@@ -1,6 +1,7 @@
 from theano.tensor.signal import pool
 
 from base_layer import CeptronLayer, AbstractLayer
+import ceptron
 
 
 class DirectLayer(AbstractLayer):
@@ -41,5 +42,5 @@ class ConvLayer(CeptronLayer):
     """
     layer for doing convolutional job
     """
-    def __init__(self, filter_shape, ceptron):
+    def __init__(self, filter_shape, ceptron=ceptron.Tanh):
         pow()

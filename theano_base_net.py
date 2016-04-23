@@ -49,7 +49,9 @@ class BaseNet(object):
         self.pickle_file = conf.DATA_PATH + self.file_name + '.pkl'
 
         self.connect()
-        self.reset_params()
+        # self.reset_params()
+        self.init_weights_baises()
+        self.weights, self.biases = self._get_weights_biases()
 
         # l1 and l2 regularization
         self.l1, self.l2 = self.init_regularization()
@@ -65,7 +67,6 @@ class BaseNet(object):
         self.train_model = None
         self.valid_model = None
         self.test_model = None
-        # self.set_weights_biases = theano.function(self._make_updates(self.weights, self.biases))
 
         # set early stopping patience
         self.patience = 20
@@ -178,7 +179,7 @@ class BaseNet(object):
 
     def reset_params(self):
         self.init_weights_baises()
-        # self._set_weights_biases(*self._get_weights_biases())
+        self._set_weights_biases(*self._get_weights_biases())
 
     def save_params(self):
         weights, biases = self._get_weights_biases()
@@ -202,13 +203,15 @@ class BaseNet(object):
         for i, layer in enumerate(self.weighted_layers):
             layer.w.set_value(weights[i].get_value())
             layer.b.set_value(biases[i].get_value())
-
-        print('biases[1]:')
-        print(biases[1].get_value())
+            # to make save / load / reset functional
+            self.weights[i].set_value(weights[i].get_value())
+            self.biases[i].set_value(biases[i].get_value())
 
     def get_b(self):
+        print('get_b:')
         layer = self.weighted_layers[1]
         print(layer.b.get_value())
         # print(layer.w.get_value())
         _get_b = theano.function([], layer.b)
         print(_get_b())
+
