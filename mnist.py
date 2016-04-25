@@ -41,4 +41,4 @@ class MNIST(object):
         return tu.shared_dataset(self.test_set)
 
 # test
-# mn = MNIST()
+mn = MNIST()

@@ -1,6 +1,6 @@
 import numpy as np
 
-import ceptron
+import my_ceptron
 import theano_base_net
 import theano_cost_function
 import common
@@ -66,7 +66,7 @@ class Logistic(theano_base_net.BaseNet):
         print('last test score:{0}'.format(last_test_score))
 
 
-lo = Logistic([(28 * 28, None), (50, ceptron.Tanh()), (10, ceptron.TheanoSoftMax())])
+lo = Logistic([(28 * 28, None), (50, my_ceptron.Tanh()), (10, my_ceptron.TheanoSoftMax())])
 # lo.get_b()
 # lo.save_params()
 lo.train(1000, 600, learning_rate=0.01)

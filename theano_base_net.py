@@ -61,9 +61,6 @@ class BaseNet(object):
         self.y = T.ivector('y')
         self.index = T.iscalar('index')
 
-        # self.load_params()
-        # self.p_y = self.forward(self.x)
-
         self.train_model = None
         self.valid_model = None
         self.test_model = None
@@ -82,7 +79,7 @@ class BaseNet(object):
 
     def connect(self):
         for i, layer in enumerate(self.layers[:-1]):
-            self.layers[i+1].set_inputs_shape(layer.outputs_shape)
+            self.layers[i+1].set_inputs_shape(layer.get_outputs_shape())
 
     def init_weights_baises(self):
         for layer in self.weighted_layers:
@@ -99,14 +96,15 @@ class BaseNet(object):
         # l2 = T.sqrt(l2)
         return l1, l2
 
-    def forward(self, x):
+    def forward(self, x, batch_size=None):
         """
         :param x: array of inputs
+        :param batch_size: can be ignored if not for conv layers etc.
         :return:
         """
         a = x
         for layer in self.layers:
-            a = layer.forward(a)
+            a = layer.forward(a, {'batch_size': batch_size})
         return a
 
     def set_train_model(self, train_set, cost_func, batch_size, learning_rate, l1_a=0.0, l2_a=0.0001):
@@ -121,7 +119,7 @@ class BaseNet(object):
 
         # compute gradients of weights and biases
         updates = []
-        for layer in self.weighted_layers:
+        for layer in reversed(self.weighted_layers):
             g_w = T.grad(cost, layer.w)
             g_b = T.grad(cost, layer.b)
             updates += [(layer.w, layer.w - learning_rate * g_w),
@@ -136,6 +134,42 @@ class BaseNet(object):
 
         # check if using gpu
         tu.check_gpu(self.train_model)
+
+    def init_with_train_model(self, layers, train_set, cost_func, batch_size, learning_rate, l1_a=0.0, l2_a=0.0001):
+        """
+            :parameter layers: a list of tuple for init layers
+            """
+        self.layers = layers
+        self.weighted_layers = self.get_weighted_layers()
+        self.rng = np.random.RandomState(1234)
+        self.depth = len(self.weighted_layers)
+
+        # set pickle file path
+        self.file_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
+        self.pickle_file = conf.DATA_PATH + self.file_name + '.pkl'
+
+        self.connect()
+        # self.reset_params()
+        self.init_weights_baises()
+        self.weights, self.biases = self._get_weights_biases()
+
+        # l1 and l2 regularization
+        self.l1, self.l2 = self.init_regularization()
+
+        # init theano functions
+        self.x = T.matrix('x')
+        self.y = T.ivector('y')
+        self.index = T.iscalar('index')
+
+        self.train_model = None
+        self.valid_model = None
+        self.test_model = None
+
+        # set early stopping patience
+        self.patience = 20
+        self.patience_inc_coef = -0.1
+        self.lest_valid_error = np.inf
+        self.set_train_model(train_set, cost_func, batch_size, learning_rate, l1_a, l2_a)
 
     def set_valid_test_models(self, valid_set, test_set, errors):
         print('setting valid and test models...')

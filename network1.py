@@ -15,7 +15,7 @@ import random
 
 # Third-party libraries
 import numpy as np
-import ceptron, mnist_loader, common
+import my_ceptron, mnist_loader, common
 
 class Network(object):
 
@@ -136,6 +136,6 @@ class Network(object):
         """Return the vector of partial derivatives \partial C_x /
         \partial a for the output activations."""
         return (output_activations-y)
-net = Network([784, 100, 10], ceptron=ceptron.Segmoid())
+net = Network([784, 100, 10], ceptron=my_ceptron.Segmoid())
 training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
 net.SGD(training_data, 30, 10, 3, test_data=test_data)

@@ -6,7 +6,7 @@ import sys
 import os
 
 import conf
-import ceptron
+import my_ceptron
 import base_layer
 import ext_layer
 import theano_utilities as tu

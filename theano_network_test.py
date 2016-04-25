@@ -1,4 +1,4 @@
-import ceptron
+import my_ceptron
 import theano_base_net
 import theano_cost_function
 import common
@@ -57,7 +57,7 @@ def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3,
 
 
 def test():
-    net = theano_base_net.BaseNet.net_from_layer_types((28,28), [(50, ceptron.Tanh()), (10, ceptron.TheanoSoftMax())])
+    net = theano_base_net.BaseNet.net_from_layer_types((28,28), [(50, my_ceptron.Tanh()), (10, my_ceptron.TheanoSoftMax())])
     net.get_b()
     # net.save_params()
     valid_set, test_set = train(net, 1000, 600, learning_rate=0.01)

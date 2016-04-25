@@ -1,5 +1,5 @@
 import numpy as np
-import mnist, common, ceptron, random
+import mnist, common, my_ceptron, random
 import matplotlib.pyplot as plt
 
 # mn = mnist.MNIST()
@@ -176,7 +176,7 @@ def display_pair(mnist_set):
     plt.show()
     return i
 
-n1 = Networks([784,30,10], ceptron=ceptron.Segmoid())
+n1 = Networks([784,30,10], ceptron=my_ceptron.Segmoid())
 mn = mnist.MNIST()
 x, y = mn.get_train_set(10000)
 n1.train(x, y)
