@@ -32,13 +32,14 @@ class Segmoid(Ceptron):
     def core_func_derivative(self, z):
         return self.core_func(z)*(1-self.core_func(z))
 
-    def weights_init_func(self, rng, n_inputs, n_outputs):
-
+    def weights_init_func(self, rng, n_inputs, n_outputs, shape=None):
+        if shape is None:
+            shape = (n_inputs, n_outputs)
         w_values = np.asarray(
             rng.uniform(
                 low=-np.sqrt(6. / (n_inputs + n_outputs)),
                 high=np.sqrt(6. / (n_inputs + n_outputs)),
-                size=(n_inputs, n_outputs)
+                size=shape
             ),
             dtype=theano.config.floatX
         )
@@ -60,16 +61,18 @@ class Tanh(Ceptron):
     def core_func(z):
         return T.tanh(z)
 
-    def weights_init_func(self, rng, n_inputs, n_outputs):
+    def weights_init_func(self, rng, n_inputs, n_outputs, shape=None):
         """
         :param rng: passed random state to generate random values
         :param n_inputs: number of inputs
         """
+        if shape is None:
+            shape = (n_inputs, n_outputs)
         w_values = np.asarray(
             rng.uniform(
                 low=-np.sqrt(6. / (n_inputs + n_outputs)),
                 high=np.sqrt(6. / (n_inputs + n_outputs)),
-                size=(n_inputs, n_outputs)
+                size=shape
             ),
             dtype=theano.config.floatX
         )

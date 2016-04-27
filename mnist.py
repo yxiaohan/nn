@@ -40,5 +40,3 @@ class MNIST(object):
     def theano_test_set(self):
         return tu.shared_dataset(self.test_set)
 
-# test
-mn = MNIST()

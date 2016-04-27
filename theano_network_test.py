@@ -1,5 +1,7 @@
 import my_ceptron
 import theano_base_net
+import base_layer
+import ext_layer
 import theano_cost_function
 import common
 import mnist
@@ -23,7 +25,7 @@ def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3,
 
     # set up valid and test models, by selecting errors function
     errors = theano_cost_function.zero_one(net.p_y, net.y)
-    net.set_valid_test_models(valid_set, test_set, errors)
+    net.set_valid_test_models(valid_set, test_set, errors, batch_size)
 
     n_batches = net.get_batch_number(train_set, batch_size)
     print('number of batches: {0}'.format(n_batches))
@@ -57,10 +59,12 @@ def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3,
 
 
 def test():
-    net = theano_base_net.BaseNet.net_from_layer_types((28,28), [(50, my_ceptron.Tanh()), (10, my_ceptron.TheanoSoftMax())])
+    layers = [ext_layer.DirectLayer((28,28)), ext_layer.Conv2DLayer(3, (12, 12), my_ceptron.Tanh()), base_layer.CeptronLayer(50, my_ceptron.Tanh()), base_layer.CeptronLayer(10, my_ceptron.TheanoSoftMax())]
+    # net = theano_base_net.BaseNet.net_from_layer_types((28,28), [(50, my_ceptron.Tanh()), (10, my_ceptron.TheanoSoftMax())])
+    net = theano_base_net.BaseNet(layers)
     net.get_b()
     # net.save_params()
-    valid_set, test_set = train(net, 1000, 600, learning_rate=0.01)
+    valid_set, test_set = train(net, 1000, 10000, learning_rate=0.01)
     print('after training:')
     net.get_b()
     print('test before reset:{0}'.format(net.test_model()))

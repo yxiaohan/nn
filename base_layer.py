@@ -61,8 +61,8 @@ class CeptronLayer(AbstractLayer):
         super().__init__(outputs_shape)
         self.ceptron = ceptron
         if not isinstance(ceptron, Ceptron):
-            print(type(ceptron))
-            raise ValueError('ceptron must be a type of ceptron.Ceptron')
+            print(ceptron)
+            raise ValueError('ceptron must be a type of my_ceptron.Ceptron')
         self.have_weights = True
         self.b = b
         self.w = w
@@ -71,6 +71,7 @@ class CeptronLayer(AbstractLayer):
         return 'layer({!r}, {!r})'.format(type(self.ceptron), self._outputs_shape)
 
     def forward(self, inputs, **kwargs):
+        print(inputs, self.w, self.b)
         z = T.dot(inputs, self.w) + self.b
         return self.ceptron.core_func(z)
 

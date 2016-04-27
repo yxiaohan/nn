@@ -25,14 +25,28 @@ class BaseNet(object):
         return data_set[0].get_value(borrow=True).shape[0] // batch_size
 
     @staticmethod
-    def init_cetptron_layers(layer_types):
+    def init_cetptron_layers(layer_types: []):
         return [base_layer.CeptronLayer(*layer_type) for layer_type in layer_types]
+
+    @staticmethod
+    def init_layers(inputs_shape, layer_types):
+        input_layer = ext_layer.DirectLayer(inputs_shape=inputs_shape)
+        layers = [input_layer] + BaseNet.init_cetptron_layers(layer_types)
+        return layers
 
     @classmethod
     def net_from_layer_types(cls, inputs_shape, layer_types):
         input_layer = ext_layer.DirectLayer(inputs_shape=inputs_shape)
         layers = [input_layer] + cls.init_cetptron_layers(layer_types)
         net = cls(layers)
+        return net
+    @classmethod
+    def init_with_train_model(cls, layers, train_set, cost_func, batch_size, learning_rate, l1_a=0.0, l2_a=0.0001):
+        """
+            :parameter layers: a list of tuple for init layers
+            """
+        net = cls(layers)
+        net.set_train_model(train_set, cost_func, batch_size, learning_rate, l1_a, l2_a)
         return net
 
     def __init__(self, layers: [base_layer.AbstractLayer]):
@@ -104,11 +118,11 @@ class BaseNet(object):
         """
         a = x
         for layer in self.layers:
-            a = layer.forward(a, {'batch_size': batch_size})
+            a = layer.forward(a, batch_size=batch_size)
         return a
 
     def set_train_model(self, train_set, cost_func, batch_size, learning_rate, l1_a=0.0, l2_a=0.0001):
-        self.p_y = self.forward(self.x)
+        self.p_y = self.forward(self.x, batch_size)
         cost = cost_func(self.p_y, self.y) + self.l1 * l1_a + self.l2 * l2_a
 
         # set early stopping patience
@@ -135,43 +149,7 @@ class BaseNet(object):
         # check if using gpu
         tu.check_gpu(self.train_model)
 
-    def init_with_train_model(self, layers, train_set, cost_func, batch_size, learning_rate, l1_a=0.0, l2_a=0.0001):
-        """
-            :parameter layers: a list of tuple for init layers
-            """
-        self.layers = layers
-        self.weighted_layers = self.get_weighted_layers()
-        self.rng = np.random.RandomState(1234)
-        self.depth = len(self.weighted_layers)
-
-        # set pickle file path
-        self.file_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
-        self.pickle_file = conf.DATA_PATH + self.file_name + '.pkl'
-
-        self.connect()
-        # self.reset_params()
-        self.init_weights_baises()
-        self.weights, self.biases = self._get_weights_biases()
-
-        # l1 and l2 regularization
-        self.l1, self.l2 = self.init_regularization()
-
-        # init theano functions
-        self.x = T.matrix('x')
-        self.y = T.ivector('y')
-        self.index = T.iscalar('index')
-
-        self.train_model = None
-        self.valid_model = None
-        self.test_model = None
-
-        # set early stopping patience
-        self.patience = 20
-        self.patience_inc_coef = -0.1
-        self.lest_valid_error = np.inf
-        self.set_train_model(train_set, cost_func, batch_size, learning_rate, l1_a, l2_a)
-
-    def set_valid_test_models(self, valid_set, test_set, errors):
+    def set_valid_test_models(self, valid_set, test_set, errors, batch_size=None):
         print('setting valid and test models...')
         self.valid_model = self._set_model(valid_set, errors)
         self.test_model = self._set_model(test_set, errors)
@@ -184,7 +162,11 @@ class BaseNet(object):
                 self.y: set_y
             })
         else:
-            raise NotImplementedError
+            index = self.index
+            model = theano.function([index], errors, givens={
+                self.x: self._get_mini_batch(set_x, batch_size, index),
+                self.y: self._get_mini_batch(set_y, batch_size, index),
+            })
         return model
 
     def is_new_best(self, valid_error):

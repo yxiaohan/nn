@@ -1,5 +1,6 @@
-from theano.tensor.signal import pool
+from theano.tensor.signal import downsample
 from theano.tensor.nnet import conv2d
+import theano.tensor as T
 import numpy as np
 
 from base_layer import CeptronLayer, AbstractLayer
@@ -14,7 +15,7 @@ class DirectLayer(AbstractLayer):
     def __init__(self, inputs_shape: tuple):
         super().__init__(outputs_shape=inputs_shape)
 
-    def forward(self, inputs, *args):
+    def forward(self, inputs, **args):
         return inputs
 
 
@@ -32,28 +33,32 @@ class PoolingLayer(AbstractLayer):
         self.pool_size = pool_size
         super().__init__(outputs_shape=outputs_shape)
 
-    def forward(self, inputs, *args):
+    def forward(self, inputs, **args):
         raise NotImplementedError
 
 
 class MaxPoolingLayer(PoolingLayer):
-    def forward(self, inputs, *args):
-        return pool.max_pool_2d(input=inputs, ds=self.pool_size, ignore_border=True)
+    def forward(self, inputs, **args):
+        return downsample.max_pool_2d(input=inputs, ds=self.pool_size, ignore_border=True)
 
 
 class Conv2DLayer(CeptronLayer):
     """
     layer for doing convolutional job, handling 2d arrays
     """
-    def __init__(self, n_feature_map, filter_shape, ceptron=my_ceptron.Tanh):
+    def __init__(self, n_feature_map, filter_shape, ceptron=my_ceptron.Tanh()):
         """
         :param filter_shape: a length 2 tuple with height and width of filter
         :param n_feature_map: number of feature maps
         """
-        outputs_shape = filter_shape + n_feature_map
+        outputs_shape = filter_shape + (n_feature_map, )
+        print(ceptron)
         super().__init__(outputs_shape, ceptron)
         self.filter_shape = filter_shape
         self.n_feature_map = n_feature_map
+
+    def __repr__(self):
+        return 'layer({!r}, {!r})'.format(type(self), self._outputs_shape)
 
     def get_outputs_shape(self):
         if self._inputs_shape is None:
@@ -83,17 +88,21 @@ class Conv2DLayer(CeptronLayer):
         n_filter_cells = np.prod(self.filter_shape)
         n_inputs = self.get_inputs_shape()[0] * n_filter_cells
         n_outputs = self.n_feature_map * n_filter_cells
-        self.w = self.ceptron.weights_init_func(rng, n_inputs, n_outputs)
+        shape = (self.n_feature_map, self._inputs_shape[0]) + self.filter_shape
+        self.w = self.ceptron.weights_init_func(rng, n_inputs, n_outputs, shape)
 
     def init_biases(self):
         self.b = tu.shared_zeros(self.n_feature_map, 'b')
 
     def convolution(self, inputs, batch_size):
-        assert inputs[0] == batch_size
+        # print(inputs.shape)
+        # batch_size = inputs.shape[0]
         # convert inputs into con2d required shapes
         # n_input_maps, height, width = self._inputs_shape
         # x = inputs.reshape(batch_size, n_input_maps, height, width)
         input_shape = (batch_size, ) + self._inputs_shape
+        print(input_shape)
+        inputs = inputs.reshape(input_shape)
         filter_shape_4d = (self.n_feature_map, self._inputs_shape[0]) + self.filter_shape
         z = conv2d(input=inputs, filters=self.w, input_shape=input_shape, filter_shape=filter_shape_4d)
         return z
@@ -108,8 +117,11 @@ class Conv2DLayer(CeptronLayer):
             batch_size = kwargs[key]
         else:
             raise ValueError('batch_size not specified')
-        z = self.convolution(inputs, batch_size)
-        return super().forward(z)
+        z = self.pre_forward(inputs, batch_size)
+        # z = super().forward(z)
+        z = T.tanh(z + self.b.dimshuffle('x', 0, 'x', 'x'))
+        z = z.flatten(2)
+        return z
 
 
 class Conv2DPoolingLayer(Conv2DLayer):
