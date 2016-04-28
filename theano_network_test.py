@@ -1,3 +1,5 @@
+import numpy as np
+
 import my_ceptron
 import theano_base_net
 import base_layer
@@ -25,9 +27,12 @@ def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3,
 
     # set up valid and test models, by selecting errors function
     errors = theano_cost_function.zero_one(net.p_y, net.y)
-    net.set_valid_test_models(valid_set, test_set, errors)
+    net.set_valid_test_models(valid_set, test_set, errors, batch_size)
 
     n_batches = net.get_batch_number(train_set, batch_size)
+    n_valid_batches = net.get_batch_number(valid_set, batch_size)
+    n_test_batches = net.get_batch_number(test_set, batch_size)
+
     print('number of batches: {0}'.format(n_batches))
     timer = common.SpeedTest()
     timer.start()
@@ -41,12 +46,12 @@ def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3,
         # avg_train_cost = np.mean(costs)
         # print('average training cost:%f' % avg_train_cost)
 
-        valid_errors = net.valid_model()
+        valid_errors = np.mean([net.valid_model(n) for n in range(n_valid_batches)])
         print('validation errors: %f' % valid_errors)
         epoch_count += 1
         try:
             if net.is_new_best(valid_errors):
-                last_test_score = net.test_model()
+                last_test_score = np.mean([net.test_model(n) for n in range(n_test_batches)])
                 print('new best found, testing:{0}'.format(last_test_score))
                 net.save_params()
         except UserWarning as e:
@@ -59,7 +64,11 @@ def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3,
 
 
 def test():
-    layers = [ext_layer.DirectLayer((28,28)),  base_layer.CeptronLayer(50, my_ceptron.Tanh()), base_layer.CeptronLayer(10, my_ceptron.TheanoSoftMax())]
+    layers = [ext_layer.DirectLayer((28,28)),
+              ext_layer.Conv2DPoolingLayer(3, (5, 5), (2, 2)),
+              ext_layer.Conv2DPoolingLayer(3, (5, 5), (2, 2)),
+              base_layer.CeptronLayer(500, my_ceptron.Tanh()),
+              base_layer.CeptronLayer(10, my_ceptron.TheanoSoftMax())]
     # net = theano_base_net.BaseNet.net_from_layer_types((28,28), [(50, my_ceptron.Tanh()), (10, my_ceptron.TheanoSoftMax())])
     net = theano_base_net.BaseNet(layers)
     net.get_b()

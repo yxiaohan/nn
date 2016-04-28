@@ -151,8 +151,8 @@ class BaseNet(object):
 
     def set_valid_test_models(self, valid_set, test_set, errors, batch_size=None):
         print('setting valid and test models...')
-        self.valid_model = self._set_model(valid_set, errors)
-        self.test_model = self._set_model(test_set, errors)
+        self.valid_model = self._set_model(valid_set, errors, batch_size)
+        self.test_model = self._set_model(test_set, errors, batch_size)
 
     def _set_model(self, data_set, errors, batch_size=None):
         set_x, set_y = data_set

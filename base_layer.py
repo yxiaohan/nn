@@ -30,7 +30,7 @@ class AbstractLayer(object):
         """
         self.have_weights = False
 
-        self._outputs_shape = AbstractLayer._set_data_shape(outputs_shape)
+        self.set_outputs_shape(AbstractLayer._set_data_shape(outputs_shape))
         # inputs shape will be set after the layer is connected in a network
         self._inputs_shape = None
 
@@ -45,6 +45,9 @@ class AbstractLayer(object):
 
     def get_outputs_shape(self):
         return self._outputs_shape
+
+    def set_outputs_shape(self, outputs_shape):
+        self._outputs_shape = outputs_shape
 
     def forward(self, inputs, **kwargs):
         raise NotImplementedError
@@ -68,20 +71,21 @@ class CeptronLayer(AbstractLayer):
         self.w = w
 
     def __repr__(self):
-        return 'layer({!r}, {!r})'.format(type(self.ceptron), self._outputs_shape)
+        return 'layer({!r}, {!r})'.format(type(self.ceptron), self.get_outputs_shape())
 
     def forward(self, inputs, **kwargs):
-        print(inputs, self.w, self.b)
+
+        inputs = inputs.flatten(2)
         z = T.dot(inputs, self.w) + self.b
         return self.ceptron.core_func(z)
 
     def init_weights(self, rng):
         n_inputs = np.prod(self._inputs_shape)
-        n_outputs = np.prod(self._outputs_shape)
+        n_outputs = np.prod(self.get_outputs_shape())
         self.w = self.ceptron.weights_init_func(rng, n_inputs, n_outputs)
 
     def init_biases(self):
-        self.b = tu.shared_zeros(self._outputs_shape, 'b')
+        self.b = tu.shared_zeros(self.get_outputs_shape(), 'b')
 
     # def set_weights(self, w):
     #     self.w = w
