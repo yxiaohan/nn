@@ -74,7 +74,6 @@ class CeptronLayer(AbstractLayer):
         return 'layer({!r}, {!r})'.format(type(self.ceptron), self.get_outputs_shape())
 
     def forward(self, inputs, **kwargs):
-
         inputs = inputs.flatten(2)
         z = T.dot(inputs, self.w) + self.b
         return self.ceptron.core_func(z)

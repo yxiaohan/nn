@@ -176,7 +176,7 @@ class BaseNet(object):
         assert valid_error >= 0
         assert self.lest_valid_error >= 0
 
-        improvement_threshold = 0.05
+        improvement_threshold = 0.005
         improvement = (self.lest_valid_error - valid_error) / valid_error
 
         result = False
