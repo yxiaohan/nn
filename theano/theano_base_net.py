@@ -1,14 +1,15 @@
-import theano
-import theano.tensor as T
-import numpy as np
+import os
 import pickle
 import sys
-import os
 
-import conf
+import numpy as np
+import theano.tensor as T
+
 import base_layer
-import ext_layer
-import theano_utilities as tu
+import conf
+import theano
+import theano.ext_layer
+from theano import theano_utilities as tu, ext_layer
 
 
 class BaseNet(object):
@@ -26,7 +27,7 @@ class BaseNet(object):
 
     @staticmethod
     def init_cetptron_layers(layer_types: []):
-        return [base_layer.CeptronLayer(*layer_type) for layer_type in layer_types]
+        return [ext_layer.CeptronLayer(*layer_type) for layer_type in layer_types]
 
     @staticmethod
     def init_layers(inputs_shape, layer_types):

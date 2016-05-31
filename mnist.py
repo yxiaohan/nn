@@ -1,7 +1,10 @@
-import pickle, gzip
+import gzip
+import pickle
+
 import numpy as np
-import theano_utilities as tu
-import conf, common
+
+import conf
+from theano import theano_utilities as tu
 
 
 class MNIST(object):

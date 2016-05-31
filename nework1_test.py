@@ -12,11 +12,11 @@ and omits many desirable features.
 #### Libraries
 # Standard library
 import random
-import datetime
 
 # Third-party libraries
 import numpy as np
-import my_ceptron, mnist_loader, common
+import mnist_loader, common
+from theano import my_ceptron
 
 
 class Network(object):

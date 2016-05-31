@@ -1,10 +1,3 @@
-import theano.tensor as T
-import numpy as np
-
-import theano_utilities as tu
-from my_ceptron import Ceptron
-
-
 class AbstractLayer(object):
     """
     abstract layer without weights or biases, or ceptron
@@ -49,42 +42,51 @@ class AbstractLayer(object):
     def set_outputs_shape(self, outputs_shape):
         self._outputs_shape = outputs_shape
 
+    def connect(self, layer_to_connect, layer_index=None):
+        """
+        set up out puts shape, based on the layer connected to
+        :param layer_to_connect:
+        :param layer_index: the index of this layer (self) in network
+        :return:
+        """
+        assert isinstance(layer_to_connect, AbstractLayer)
+        self.set_inputs_shape(layer_to_connect.get_outputs_shape())
+
     def forward(self, inputs, **kwargs):
         raise NotImplementedError
 
 
-class CeptronLayer(AbstractLayer):
+class DirectLayer(AbstractLayer):
     """
-    this layer expects a ceptron
+    this layer simply bypasses inputs to outputs, without any changes, usually acting as the first layer
     """
-    def __init__(self, outputs_shape, ceptron, w=None, b=None):
+    def __init__(self, inputs_shape: tuple):
+        super().__init__(outputs_shape=inputs_shape)
+
+    def forward(self, inputs, **args):
+        return inputs
+
+
+class PoolingLayer(AbstractLayer):
+    """
+    layer for pooling convolutional outputs
+    """
+    def __init__(self, inputs_shape: tuple, pool_size: tuple):
         """
-        :argument ceptron: type of core_functions etc.
+        :type inputs_shape: a tuple
+        :param inputs_shape: the shape of inputs
         """
-        super().__init__(outputs_shape)
-        self.ceptron = ceptron
-        if not isinstance(ceptron, Ceptron):
-            print(ceptron)
-            raise ValueError('ceptron must be a type of my_ceptron.Ceptron')
-        self.have_weights = True
-        self.b = b
-        self.w = w
+        print(inputs_shape, pool_size)
+        assert len(inputs_shape) == len(pool_size)
+        outputs_shape = tuple([i // p for i, p in zip(inputs_shape, pool_size)])
+        self.pool_size = pool_size
+        super().__init__(outputs_shape=outputs_shape)
 
-    def __repr__(self):
-        return 'layer({!r}, {!r})'.format(type(self.ceptron), self.get_outputs_shape())
+    def forward(self, inputs, **args):
+        raise NotImplementedError
 
-    def forward(self, inputs, **kwargs):
-        inputs = inputs.flatten(2)
-        z = T.dot(inputs, self.w) + self.b
-        return self.ceptron.core_func(z)
 
-    def init_weights(self, rng):
-        n_inputs = np.prod(self._inputs_shape)
-        n_outputs = np.prod(self.get_outputs_shape())
-        self.w = self.ceptron.weights_init_func(rng, n_inputs, n_outputs)
 
-    def init_biases(self):
-        self.b = tu.shared_zeros(self.get_outputs_shape(), 'b')
 
     # def set_weights(self, w):
     #     self.w = w

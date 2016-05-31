@@ -1,10 +1,9 @@
 import numpy as np
-
-import my_ceptron
 import theano_base_net
-import theano_cost_function
+
 import common
 import mnist
+from theano import theano_cost_function, my_ceptron
 
 
 class Logistic(theano_base_net.BaseNet):

@@ -1,6 +1,11 @@
-import numpy as np
-import mnist, common, my_ceptron, random
 import matplotlib.pyplot as plt
+import numpy as np
+
+import common
+import mnist
+import random
+from theano import my_ceptron
+
 
 # mn = mnist.MNIST()
 class Networks(object):

@@ -34,7 +34,7 @@ import theano
 import theano.tensor as T
 
 
-from theano_logistic1 import LogisticRegression
+from theano.theano_logistic1 import LogisticRegression
 import mnist
 
 

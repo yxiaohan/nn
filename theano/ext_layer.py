@@ -1,41 +1,44 @@
-from theano.tensor.signal import downsample
-from theano.tensor.nnet import conv2d
 import theano.tensor as T
-import numpy as np
+from theano.tensor.nnet import conv2d
+from theano.tensor.signal import downsample
 
-from base_layer import CeptronLayer, AbstractLayer
-import theano_utilities as tu
+from base_layer import *
+from theano import theano_utilities as tu
 import my_ceptron
 
 
-class DirectLayer(AbstractLayer):
+class CeptronLayer(AbstractLayer):
     """
-    this layer simply bypasses inputs to outputs, without any changes, usually acting as the first layer
+    this layer expects a ceptron
     """
-    def __init__(self, inputs_shape: tuple):
-        super().__init__(outputs_shape=inputs_shape)
-
-    def forward(self, inputs, **args):
-        return inputs
-
-
-class PoolingLayer(AbstractLayer):
-    """
-    layer for pooling convolutional outputs
-    """
-    def __init__(self, inputs_shape: tuple, pool_size: tuple):
+    def __init__(self, outputs_shape, ceptron, w=None, b=None):
         """
-        :type inputs_shape: a tuple
-        :param inputs_shape: the shape of inputs
+        :argument ceptron: type of core_functions etc.
         """
-        print(inputs_shape, pool_size)
-        assert len(inputs_shape) == len(pool_size)
-        outputs_shape = tuple([i // p for i, p in zip(inputs_shape, pool_size)])
-        self.pool_size = pool_size
-        super().__init__(outputs_shape=outputs_shape)
+        super().__init__(outputs_shape)
+        self.ceptron = ceptron
+        if not isinstance(ceptron, Ceptron):
+            print(ceptron)
+            raise ValueError('ceptron must be a type of my_ceptron.Ceptron')
+        self.have_weights = True
+        self.b = b
+        self.w = w
 
-    def forward(self, inputs, **args):
-        raise NotImplementedError
+    def __repr__(self):
+        return 'layer({!r}, {!r})'.format(type(self.ceptron), self.get_outputs_shape())
+
+    def forward(self, inputs, **kwargs):
+        inputs = inputs.flatten(2)
+        z = T.dot(inputs, self.w) + self.b
+        return self.ceptron.core_func(z)
+
+    def init_weights(self, rng):
+        n_inputs = np.prod(self._inputs_shape)
+        n_outputs = np.prod(self.get_outputs_shape())
+        self.w = self.ceptron.init_weights(rng, n_inputs, n_outputs)
+
+    def init_biases(self):
+        self.b = tu.shared_zeros(self.get_outputs_shape(), 'b')
 
 
 class MaxPoolingLayer(PoolingLayer):
@@ -89,7 +92,7 @@ class Conv2DLayer(CeptronLayer):
         n_inputs = self.get_inputs_shape()[0] * n_filter_cells
         n_outputs = self.n_feature_map * n_filter_cells
         shape = (self.n_feature_map, self._inputs_shape[0]) + self.filter_shape
-        self.w = self.ceptron.weights_init_func(rng, n_inputs, n_outputs, shape)
+        self.w = self.ceptron.init_weights(rng, n_inputs, n_outputs, shape)
 
     def init_biases(self):
         self.b = tu.shared_zeros(self.n_feature_map, 'b')

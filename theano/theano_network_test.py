@@ -1,12 +1,10 @@
 import numpy as np
-
-import my_ceptron
 import theano_base_net
+
 import base_layer
-import ext_layer
-import theano_cost_function
 import common
 import mnist
+from theano import theano_cost_function, ext_layer, my_ceptron
 
 
 def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3, auto_load_mnist=True, **kwargs):
@@ -64,7 +62,7 @@ def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3,
 
 
 def test():
-    layers = [ext_layer.DirectLayer((28,28)),
+    layers = [ext_layer.DirectLayer((28, 28)),
               ext_layer.Conv2DPoolingLayer(3, (5, 5), (2, 2)),
               ext_layer.Conv2DPoolingLayer(3, (5, 5), (2, 2)),
               base_layer.CeptronLayer(500, my_ceptron.Tanh()),

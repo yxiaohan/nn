@@ -1,8 +1,8 @@
 import numpy as np
 import theano.tensor as T
-import theano
 
-import theano_utilities as tu
+import theano
+from theano import theano_utilities as tu
 
 
 class Ceptron(object):

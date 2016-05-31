@@ -1,12 +1,15 @@
-import theano
-import theano.tensor as T
-import numpy as np
+import os
 import pickle
 import sys
-import os
 
-import theano_utilities as tu
+import numpy as np
+import theano.tensor as T
+
+import base_layer
 import conf
+import theano
+import theano.ext_layer
+from theano import theano_utilities as tu, ext_layer
 
 
 class BaseNet(object):
@@ -22,16 +25,30 @@ class BaseNet(object):
     def get_batch_number(data_set, batch_size):
         return data_set[0].get_value(borrow=True).shape[0] // batch_size
 
-    def __init__(self, layers, ceptron):
+    @staticmethod
+    def init_cetptron_layers(layer_types):
+        return [base_layer.CeptronLayer(*layer_type) for layer_type in layer_types]
+
+    @classmethod
+    def net_from_layer_types(cls, inputs_shape, layer_types):
+        input_layer = ext_layer.DirectLayer(inputs_shape=inputs_shape)
+        layers = [input_layer] + cls.init_cetptron_layers(layer_types)
+        net = cls(layers)
+        return net
+
+    def __init__(self, layers: [base_layer.AbstractLayer]):
         """
-        :parameter layers: a list of layers, by the type of base_layer
+        :parameter layers: a list of tuple for init layers
         """
-        assert type(layers) == list
         self.layers = layers
+        self.rng = np.random.RandomState(1234)
+        self.depth = len(self.layers) - 1
+
         self.weights = self.init_weights()
         self.biases = self.init_biases()
-        self.ceptron = ceptron
-        self.depth = len(layers) - 1
+
+        # l1 and l2 regularization
+        self.l1, self.l2 = self.init_regularization()
 
         # init theano functions
         self.x = T.matrix('x')
@@ -40,10 +57,12 @@ class BaseNet(object):
         self.p_y = self.forward(self.x)
 
         self.train_model = None
+        self.valid_model = None
+        self.test_model = None
         # self.set_weights_biases = theano.function(self._make_updates(self.weights, self.biases))
 
         # set early stopping patience
-        self.patience = 5
+        self.patience = 20
         self.patience_inc_coef = -0.1
         self.lest_valid_error = np.inf
 
@@ -53,17 +72,24 @@ class BaseNet(object):
 
     def init_weights(self):
         weights = []
-        for i, (inputs, outputs) in enumerate(zip(self.layers[:-1], self.layers[1:])):
-            w = tu.shared_zeros((inputs, outputs), name='w%d%d' % (i, i + 1))
+        for i in range(self.depth):
+            w = self.layers[i + 1].init_weights(
+                self.rng, self.layers[i].n_outputs, self.layers[i+1].n_outputs)
+            self.layers[i + 1].set_weights(w)
             weights.append(w)
         return weights
 
     def init_biases(self):
-        biases = []
-        for i, outputs in enumerate(self.layers[1:]):
-            b = tu.shared_zeros((outputs,), name='b%d' % (i + 1))
-            biases.append(b)
-        return biases
+        return [layer.init_biases() for layer in self.layers[1:]]
+
+    def init_regularization(self):
+        l1 = 0
+        l2 = 0
+        for w in self.weights:
+            l1 += T.sum(abs(w))
+            l2 += T.sum(w ** 2)
+        # l2 = T.sqrt(l2)
+        return l1, l2
 
     def forward(self, x):
         """
@@ -71,12 +97,16 @@ class BaseNet(object):
         :return:
         """
         a = x
-        for w, b in zip(self.weights, self.biases):
+        for w, b, layer in zip(self.weights, self.biases, self.layers[1:]):
             z = T.dot(a, w) + b
-            a = self.ceptron.core_func(z=z)
+            a = layer.ceptron.core_func(z=z)
         return a
 
-    def _set_train_model(self, train_set, cost, batch_size, learning_rate):
+    def set_train_model(self, train_set, cost_func, batch_size, learning_rate, l1_a=0.0, l2_a=0.0001):
+
+        cost = cost_func(self.p_y, self.y) \
+               + self.l1 * l1_a + self.l2 * l2_a
+
         print('compiling train model..')
 
         # compute gradients of weights and biases
@@ -94,17 +124,13 @@ class BaseNet(object):
             self.x: self._get_mini_batch(train_set_x, batch_size, index),
             self.y: self._get_mini_batch(train_set_y, batch_size, index)
         })
-        if any([x.op.__class__.__name__ in ['Gemv', 'CGemv', 'Gemm', 'CGemm'] for x in
-                self.train_model.maker.fgraph.toposort()]):
-            print('Used the cpu')
 
-        elif any([x.op.__class__.__name__ in ['GpuGemm', 'GpuGemv'] for x in
-                  self.train_model.maker.fgraph.toposort()]):
-            print('Used the gpu')
+        # check if using gpu
+        tu.check_gpu(self.train_model)
 
-        else:
-            print('ERROR, not able to tell if theano used the cpu or the gpu')
-            print(self.train_model.maker.fgraph.toposort())
+    def set_valid_test_models(self, valid_set, test_set, errors):
+        self.valid_model = self._set_model(valid_set, errors)
+        self.test_model = self._set_model(test_set, errors)
 
     def _set_model(self, data_set, errors, batch_size=None):
         set_x, set_y = data_set
@@ -130,7 +156,7 @@ class BaseNet(object):
         result = False
         if improvement > improvement_threshold:
             self.lest_valid_error = valid_error
-            self.patience *= 1 + min(1, improvement)
+            self.patience += 3
             result = True
         else:
             self.patience *= 1 + self.patience_inc_coef
