@@ -1,4 +1,4 @@
-import theano.tensor as T
+import my_theano.tensor as T
 
 
 def negative_log_likelihood(p_y, y):
@@ -12,7 +12,7 @@ def negative_log_likelihood(p_y, y):
                 \log(P(Y=y^{(i)}|x^{(i)}, W,b)) \\
             \ell (\theta=\{W,b\}, \mathcal{D})
         :param p_y: the probability distribution of y given x
-        :type y: theano.tensor.TensorType
+        :type y: my_theano.tensor.TensorType
         :param y: corresponds to a vector that gives for each example the
                   correct label
 
@@ -36,7 +36,7 @@ def negative_log_likelihood(p_y, y):
 def zero_one(p_y, y):
     """
     :param p_y: the probability distribution of y given x
-        :type y: theano.tensor.TensorType
+        :type y: my_theano.tensor.TensorType
         :param y: corresponds to a vector that gives for each example the
                   correct label
     :param p_y:

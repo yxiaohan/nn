@@ -4,6 +4,7 @@ import pickle
 import numpy as np
 
 import conf
+from my_theano import theano_utilities as tu
 
 
 class MNIST(object):
@@ -44,6 +45,15 @@ class MNIST(object):
 
     def get_test_set(self):
         return self.theano_convert_data_set(self.test_set)
+
+    def theano_train_set(self):
+        return tu.shared_dataset(self.train_set)
+
+    def theano_valid_set(self):
+        return tu.shared_dataset(self.valid_set)
+
+    def theano_test_set(self):
+        return tu.shared_dataset(self.test_set)
 
     def tf_train_set(self):
         return self.tf_convert_data_set(self.train_set)

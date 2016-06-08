@@ -1,6 +1,6 @@
-from theano import function, config, shared, sandbox
-import theano.sandbox.cuda.basic_ops
-import theano.tensor as T
+from my_theano import function, config, shared, sandbox
+import my_theano.sandbox.cuda.basic_ops
+import my_theano.tensor as T
 import numpy
 import time
 

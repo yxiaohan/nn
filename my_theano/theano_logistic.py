@@ -3,7 +3,7 @@ import theano_base_net
 
 import common
 import mnist
-from theano import theano_cost_function, my_ceptron
+from my_theano import theano_cost_function, my_ceptron
 
 
 class Logistic(theano_base_net.BaseNet):

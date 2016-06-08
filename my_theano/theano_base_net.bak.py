@@ -3,11 +3,11 @@ import pickle
 import sys
 
 import numpy as np
-import theano.tensor as T
+import my_theano.tensor as T
 
 import conf
-import theano
-from theano import theano_utilities as tu
+import my_theano
+from my_theano import theano_utilities as tu
 
 
 class BaseNet(object):
@@ -34,14 +34,14 @@ class BaseNet(object):
         self.ceptron = ceptron
         self.depth = len(layers) - 1
 
-        # init theano functions
+        # init my_theano functions
         self.x = T.matrix('x')
         self.y = T.ivector('y')
         self.index = T.iscalar('index')
         self.p_y = self.forward(self.x)
 
         self.train_model = None
-        # self.set_weights_biases = theano.function(self._make_updates(self.weights, self.biases))
+        # self.set_weights_biases = my_theano.function(self._make_updates(self.weights, self.biases))
 
         # set early stopping patience
         self.patience = 5
@@ -91,7 +91,7 @@ class BaseNet(object):
         # print(self.train_set[1:3])
         train_set_x, train_set_y = train_set
         index = self.index
-        self.train_model = theano.function([index], cost, updates=updates, givens={
+        self.train_model = my_theano.function([index], cost, updates=updates, givens={
             self.x: self._get_mini_batch(train_set_x, batch_size, index),
             self.y: self._get_mini_batch(train_set_y, batch_size, index)
         })
@@ -104,13 +104,13 @@ class BaseNet(object):
             print('Used the gpu')
 
         else:
-            print('ERROR, not able to tell if theano used the cpu or the gpu')
+            print('ERROR, not able to tell if my_theano used the cpu or the gpu')
             print(self.train_model.maker.fgraph.toposort())
 
     def _set_model(self, data_set, errors, batch_size=None):
         set_x, set_y = data_set
         if batch_size is None:
-            model = theano.function([], errors, givens={
+            model = my_theano.function([], errors, givens={
                 self.x: set_x,
                 self.y: set_y
             })
@@ -164,7 +164,7 @@ class BaseNet(object):
     def get_b(self):
         print(self.biases[0].get_value())
         print(self.weights[0].get_value())
-        _get_b = theano.function([], self.biases[0])
+        _get_b = my_theano.function([], self.biases[0])
         print(_get_b())
 
     def _make_updates(self, weights, biases):

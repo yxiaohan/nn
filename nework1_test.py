@@ -16,7 +16,7 @@ import random
 # Third-party libraries
 import numpy as np
 import mnist_loader, common
-from theano import my_ceptron
+from my_theano import my_ceptron
 
 
 class Network(object):

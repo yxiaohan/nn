@@ -45,8 +45,8 @@ import timeit
 
 import numpy
 
-import theano
-import theano.tensor as T
+import my_theano
+import my_theano.tensor as T
 
 
 class LogisticRegression(object):
@@ -61,7 +61,7 @@ class LogisticRegression(object):
     def __init__(self, input, n_in, n_out):
         """ Initialize the parameters of the logistic regression
 
-        :type input: theano.tensor.TensorType
+        :type input: my_theano.tensor.TensorType
         :param input: symbolic variable that describes the input of the
                       architecture (one minibatch)
 
@@ -76,19 +76,19 @@ class LogisticRegression(object):
         """
         # start-snippet-1
         # initialize with 0 the weights W as a matrix of shape (n_in, n_out)
-        self.W = theano.shared(
+        self.W = my_theano.shared(
             value=numpy.zeros(
                 (n_in, n_out),
-                dtype=theano.config.floatX
+                dtype=my_theano.config.floatX
             ),
             name='W',
             borrow=True
         )
         # initialize the biases b as a vector of n_out 0s
-        self.b = theano.shared(
+        self.b = my_theano.shared(
             value=numpy.zeros(
                 (n_out,),
-                dtype=theano.config.floatX
+                dtype=my_theano.config.floatX
             ),
             name='b',
             borrow=True
@@ -126,7 +126,7 @@ class LogisticRegression(object):
                 \log(P(Y=y^{(i)}|x^{(i)}, W,b)) \\
             \ell (\theta=\{W,b\}, \mathcal{D})
 
-        :type y: theano.tensor.TensorType
+        :type y: my_theano.tensor.TensorType
         :param y: corresponds to a vector that gives for each example the
                   correct label
 
@@ -152,7 +152,7 @@ class LogisticRegression(object):
         over the total number of examples of the minibatch ; zero one
         loss over the size of the minibatch
 
-        :type y: theano.tensor.TensorType
+        :type y: my_theano.tensor.TensorType
         :param y: corresponds to a vector that gives for each example the
                   correct label
         """
@@ -229,12 +229,12 @@ def load_data(dataset):
         variable) would lead to a large decrease in performance.
         """
         data_x, data_y = data_xy
-        shared_x = theano.shared(numpy.asarray(data_x,
-                                               dtype=theano.config.floatX),
-                                 borrow=borrow)
-        shared_y = theano.shared(numpy.asarray(data_y,
-                                               dtype=theano.config.floatX),
-                                 borrow=borrow)
+        shared_x = my_theano.shared(numpy.asarray(data_x,
+                                                  dtype=my_theano.config.floatX),
+                                    borrow=borrow)
+        shared_y = my_theano.shared(numpy.asarray(data_y,
+                                                  dtype=my_theano.config.floatX),
+                                    borrow=borrow)
         # When storing data on the GPU it has to be stored as floats
         # therefore we will store the labels as ``floatX`` as well
         # (``shared_y`` does exactly that). But during our computations
@@ -308,7 +308,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
 
     # compiling a Theano function that computes the mistakes that are made by
     # the model on a minibatch
-    test_model = theano.function(
+    test_model = my_theano.function(
         inputs=[index],
         outputs=classifier.errors(y),
         givens={
@@ -317,7 +317,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
         }
     )
 
-    validate_model = theano.function(
+    validate_model = my_theano.function(
         inputs=[index],
         outputs=classifier.errors(y),
         givens={
@@ -339,7 +339,7 @@ def sgd_optimization_mnist(learning_rate=0.13, n_epochs=1000,
     # compiling a Theano function `train_model` that returns the cost, but in
     # the same time updates the parameter of the model based on the rules
     # defined in `updates`
-    train_model = theano.function(
+    train_model = my_theano.function(
         inputs=[index],
         outputs=cost,
         updates=updates,
@@ -456,7 +456,7 @@ def predict():
     classifier = pickle.load(open('best_model.pkl'))
 
     # compile a predictor function
-    predict_model = theano.function(
+    predict_model = my_theano.function(
         inputs=[classifier.input],
         outputs=classifier.y_pred)
 

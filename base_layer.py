@@ -62,6 +62,7 @@ class DirectLayer(AbstractLayer):
     """
     def __init__(self, inputs_shape: tuple):
         super().__init__(outputs_shape=inputs_shape)
+        self.set_inputs_shape(self.get_outputs_shape())
 
     def forward(self, inputs, **args):
         return inputs
@@ -84,18 +85,3 @@ class PoolingLayer(AbstractLayer):
 
     def forward(self, inputs, **args):
         raise NotImplementedError
-
-
-
-
-    # def set_weights(self, w):
-    #     self.w = w
-    #
-    # def set_biases(self, b):
-    #     self.b = b
-    #
-    # def get_weights(self):
-    #     return self.w
-    #
-    # def get_biases(self):
-    #     return self.b

@@ -4,7 +4,7 @@ import numpy as np
 import common
 import mnist
 import random
-from theano import my_ceptron
+from my_theano import my_ceptron
 
 
 # mn = mnist.MNIST()

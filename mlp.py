@@ -30,11 +30,11 @@ import timeit
 
 import numpy
 
-import theano
-import theano.tensor as T
+import my_theano
+import my_theano.tensor as T
 
 
-from theano.theano_logistic1 import LogisticRegression
+from my_theano.theano_logistic1 import LogisticRegression
 import mnist
 
 
@@ -54,7 +54,7 @@ class HiddenLayer(object):
         :type rng: numpy.random.RandomState
         :param rng: a random number generator used to initialize weights
 
-        :type input: theano.tensor.dmatrix
+        :type input: my_theano.tensor.dmatrix
         :param input: a symbolic tensor of shape (n_examples, n_in)
 
         :type n_in: int
@@ -63,7 +63,7 @@ class HiddenLayer(object):
         :type n_out: int
         :param n_out: number of hidden units
 
-        :type activation: theano.Op or function
+        :type activation: my_theano.Op or function
         :param activation: Non linearity to be applied in the hidden
                            layer
         """
@@ -74,7 +74,7 @@ class HiddenLayer(object):
         # from sqrt(-6./(n_in+n_hidden)) and sqrt(6./(n_in+n_hidden))
         # for tanh activation function
         # the output of uniform if converted using asarray to dtype
-        # theano.config.floatX so that the code is runable on GPU
+        # my_theano.config.floatX so that the code is runable on GPU
         # Note : optimal initialization of weights is dependent on the
         #        activation function used (among other things).
         #        For example, results presented in [Xavier10] suggest that you
@@ -89,16 +89,16 @@ class HiddenLayer(object):
                     high=numpy.sqrt(6. / (n_in + n_out)),
                     size=(n_in, n_out)
                 ),
-                dtype=theano.config.floatX
+                dtype=my_theano.config.floatX
             )
-            if activation == theano.tensor.nnet.sigmoid:
+            if activation == my_theano.tensor.nnet.sigmoid:
                 W_values *= 4
 
-            W = theano.shared(value=W_values, name='W', borrow=True)
+            W = my_theano.shared(value=W_values, name='W', borrow=True)
 
         if b is None:
-            b_values = numpy.zeros((n_out,), dtype=theano.config.floatX)
-            b = theano.shared(value=b_values, name='b', borrow=True)
+            b_values = numpy.zeros((n_out,), dtype=my_theano.config.floatX)
+            b = my_theano.shared(value=b_values, name='b', borrow=True)
 
         self.W = W
         self.b = b
@@ -130,7 +130,7 @@ class MLP(object):
         :type rng: numpy.random.RandomState
         :param rng: a random number generator used to initialize weights
 
-        :type input: theano.tensor.TensorType
+        :type input: my_theano.tensor.TensorType
         :param input: symbolic variable that describes the input of the
         architecture (one minibatch)
 
@@ -274,7 +274,7 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
 
     # compiling a Theano function that computes the mistakes that are made
     # by the model on a minibatch
-    test_model = theano.function(
+    test_model = my_theano.function(
         inputs=[index],
         outputs=classifier.errors(y),
         givens={
@@ -283,7 +283,7 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
         }
     )
 
-    validate_model = theano.function(
+    validate_model = my_theano.function(
         inputs=[index],
         outputs=classifier.errors(y),
         givens={
@@ -312,7 +312,7 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     # compiling a Theano function `train_model` that returns the cost, but
     # in the same time updates the parameter of the model based on the rules
     # defined in `updates`
-    train_model = theano.function(
+    train_model = my_theano.function(
         inputs=[index],
         outputs=cost,
         updates=updates,

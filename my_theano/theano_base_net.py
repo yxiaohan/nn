@@ -3,13 +3,13 @@ import pickle
 import sys
 
 import numpy as np
-import theano.tensor as T
+import my_theano.tensor as T
 
 import base_layer
 import conf
-import theano
-import theano.ext_layer
-from theano import theano_utilities as tu, ext_layer
+import my_theano
+import my_theano.ext_layer
+from my_theano import theano_utilities as tu, ext_layer
 
 
 class BaseNet(object):
@@ -71,7 +71,7 @@ class BaseNet(object):
         # l1 and l2 regularization
         self.l1, self.l2 = self.init_regularization()
 
-        # init theano functions
+        # init my_theano functions
         self.x = T.matrix('x')
         self.y = T.ivector('y')
         self.index = T.iscalar('index')
@@ -142,7 +142,7 @@ class BaseNet(object):
 
         train_set_x, train_set_y = train_set
         index = self.index
-        self.train_model = theano.function([index], cost, updates=updates, givens={
+        self.train_model = my_theano.function([index], cost, updates=updates, givens={
             self.x: self._get_mini_batch(train_set_x, batch_size, index),
             self.y: self._get_mini_batch(train_set_y, batch_size, index)
         })
@@ -158,13 +158,13 @@ class BaseNet(object):
     def _set_model(self, data_set, errors, batch_size=None):
         set_x, set_y = data_set
         if batch_size is None:
-            model = theano.function([], errors, givens={
+            model = my_theano.function([], errors, givens={
                 self.x: set_x,
                 self.y: set_y
             })
         else:
             index = self.index
-            model = theano.function([index], errors, givens={
+            model = my_theano.function([index], errors, givens={
                 self.x: self._get_mini_batch(set_x, batch_size, index),
                 self.y: self._get_mini_batch(set_y, batch_size, index),
             })
@@ -229,6 +229,6 @@ class BaseNet(object):
         layer = self.weighted_layers[1]
         print(layer.b.get_value())
         # print(layer.w.get_value())
-        _get_b = theano.function([], layer.b)
+        _get_b = my_theano.function([], layer.b)
         print(_get_b())
 

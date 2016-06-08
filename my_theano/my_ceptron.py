@@ -1,8 +1,8 @@
 import numpy as np
-import theano.tensor as T
+import my_theano.tensor as T
 
-import theano
-from theano import theano_utilities as tu
+import my_theano
+from my_theano import theano_utilities as tu
 
 
 class Ceptron(object):
@@ -41,12 +41,12 @@ class Segmoid(Ceptron):
                 high=np.sqrt(6. / (n_inputs + n_outputs)),
                 size=shape
             ),
-            dtype=theano.config.floatX
+            dtype=my_theano.config.floatX
         )
 
         w_values *= 4
 
-        w = theano.shared(value=w_values, name='W', borrow=True)
+        w = my_theano.shared(value=w_values, name='W', borrow=True)
         return w
 
 
@@ -74,8 +74,8 @@ class Tanh(Ceptron):
                 high=np.sqrt(6. / (n_inputs + n_outputs)),
                 size=shape
             ),
-            dtype=theano.config.floatX
+            dtype=my_theano.config.floatX
         )
 
-        w = theano.shared(value=w_values, name='W', borrow=True)
+        w = my_theano.shared(value=w_values, name='W', borrow=True)
         return w

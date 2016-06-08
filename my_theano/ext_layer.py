@@ -1,17 +1,19 @@
-import tensorflow as tf
+import my_theano.tensor as T
+from my_theano.tensor.nnet import conv2d
+from my_theano.tensor.signal import downsample
 
 from base_layer import *
-from tf_ceptrons import *
+from my_theano import theano_utilities as tu
+import my_ceptron
 
 
 class CeptronLayer(AbstractLayer):
     """
     this layer expects a ceptron
     """
-    def __init__(self, outputs_shape, ceptron, w=None, b=None, scope=None):
+    def __init__(self, outputs_shape, ceptron, w=None, b=None):
         """
         :argument ceptron: type of core_functions etc.
-        :argument scope: scope name used for layer in tensor flow
         """
         super().__init__(outputs_shape)
         self.ceptron = ceptron
@@ -21,30 +23,22 @@ class CeptronLayer(AbstractLayer):
         self.have_weights = True
         self.b = b
         self.w = w
-        self.scope = scope
 
     def __repr__(self):
         return 'layer({!r}, {!r})'.format(type(self.ceptron), self.get_outputs_shape())
 
-    def connect(self, layer_to_connect, layer_index=None):
-        super().connect(layer_to_connect)
-        # set name scope
-        if self.scope is None:
-            self.scope = 'layer_%d' % layer_index
-
     def forward(self, inputs, **kwargs):
         inputs = inputs.flatten(2)
-        z = tf.matmul(inputs, self.w) + self.b
+        z = T.dot(inputs, self.w) + self.b
         return self.ceptron.core_func(z)
 
     def init_weights(self, rng):
-        n_inputs = np.prod(self.get_inputs_shape())
+        n_inputs = np.prod(self._inputs_shape)
         n_outputs = np.prod(self.get_outputs_shape())
         self.w = self.ceptron.init_weights(rng, n_inputs, n_outputs)
 
     def init_biases(self):
-        with tf.name_scope(self.scope):
-            self.b = tf.Variable(tf.zeros(self.get_outputs_shape()), name='b')
+        self.b = tu.shared_zeros(self.get_outputs_shape(), 'b')
 
 
 class MaxPoolingLayer(PoolingLayer):

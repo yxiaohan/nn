@@ -4,7 +4,7 @@ import theano_base_net
 import base_layer
 import common
 import mnist
-from theano import theano_cost_function, ext_layer, my_ceptron
+from my_theano import theano_cost_function, ext_layer, my_ceptron
 
 
 def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3, auto_load_mnist=True, **kwargs):
@@ -21,7 +21,7 @@ def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3,
         test_set = kwargs['test_set']
 
     # select custom cost/loss function
-    net.set_train_model(train_set, theano_cost_function.negative_log_likelihood, batch_size, learning_rate)
+    net.train(train_set, theano_cost_function.negative_log_likelihood, batch_size, learning_rate)
 
     # set up valid and test models, by selecting errors function
     errors = theano_cost_function.zero_one(net.p_y, net.y)
