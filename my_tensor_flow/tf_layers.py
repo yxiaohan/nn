@@ -1,28 +1,28 @@
 from base_layer import *
-from my_tensor_flow.tf_ceptrons import *
+from my_tensor_flow.tf_neurons import *
 
 
-class CeptronLayer(AbstractLayer):
+class NeuronLayer(AbstractLayer):
     """
-    this layer expects a ceptron
+    this layer expects a neuron
     """
-    def __init__(self, outputs_shape, ceptron, w=None, b=None, scope=None):
+    def __init__(self, outputs_shape, neuron, w=None, b=None, scope=None):
         """
-        :argument ceptron: type of core_functions etc.
+        :argument neuron: type of core_functions etc.
         :argument scope: scope name used for layer in tensor flow
         """
         super().__init__(outputs_shape)
-        self.ceptron = ceptron
-        if not isinstance(ceptron, Ceptron):
-            print(ceptron)
-            raise ValueError('ceptron must be a type of my_ceptron.Ceptron')
+        self.neuron = neuron
+        if not isinstance(neuron, Neuron):
+            print(neuron)
+            raise ValueError('neuron must be a type of my_neuron.Neuron')
         self.have_weights = True
         self.b = b
         self.w = w
         self.scope = scope
 
     def __repr__(self):
-        return 'layer({!r}, {!r})'.format(type(self.ceptron), self.get_outputs_shape())
+        return 'layer({!r}, {!r})'.format(type(self.neuron), self.get_outputs_shape())
 
     def connect(self, layer_to_connect, layer_index=None):
         super().connect(layer_to_connect)
@@ -34,13 +34,13 @@ class CeptronLayer(AbstractLayer):
         # inputs = inputs.flatten(2)
         print(self.w.get_shape())
         z = tf.matmul(inputs, self.w) + self.b
-        return self.ceptron.core_func(z)
+        return self.neuron.core_func(z)
 
     def init_weights(self):
         n_inputs = np.prod(self.get_inputs_shape())
         n_outputs = np.prod(self.get_outputs_shape())
 
-        self.w = self.ceptron.init_weights(n_inputs, n_outputs, scope=self.scope)
+        self.w = self.neuron.init_weights(n_inputs, n_outputs, scope=self.scope)
 
     def init_biases(self):
         with tf.name_scope(self.scope):
@@ -53,17 +53,17 @@ class MaxPoolingLayer(PoolingLayer):
         return tf.nn.max_pool(inputs, ksize=ksize, strides=ksize, padding='VALID')
 
 
-class Conv2DLayer(CeptronLayer):
+class Conv2DLayer(NeuronLayer):
     """
     layer for doing convolutional job, handling 2d arrays
     """
-    def __init__(self, n_feature_map, filter_shape, ceptron=Tanh()):
+    def __init__(self, n_feature_map, filter_shape, neuron=Tanh()):
         """
         :param filter_shape: a length 2 tuple with height and width of filter
         :param n_feature_map: number of feature maps
         """
         outputs_shape = filter_shape + (n_feature_map, )
-        super().__init__(outputs_shape, ceptron)
+        super().__init__(outputs_shape, neuron)
         self.filter_shape = filter_shape
         self.n_feature_map = n_feature_map
 
@@ -101,7 +101,7 @@ class Conv2DLayer(CeptronLayer):
         n_inputs = self.get_inputs_shape()[0] * n_filter_cells
         n_outputs = self.n_feature_map * n_filter_cells
         shape = (self.n_feature_map, self._inputs_shape[0]) + self.filter_shape
-        self.w = self.ceptron.init_weights(n_inputs, n_outputs, shape)
+        self.w = self.neuron.init_weights(n_inputs, n_outputs, shape)
 
     def init_biases(self):
         self.b = tf.Variable(tf.zeros(self.n_feature_map), name='b')
@@ -133,8 +133,8 @@ class Conv2DLayer(CeptronLayer):
 
 
 class Conv2DPoolingLayer(Conv2DLayer):
-    def __init__(self, n_feature_map, filter_shape, pool_size, ceptron=Tanh()):
-        super().__init__(n_feature_map, filter_shape, ceptron)
+    def __init__(self, n_feature_map, filter_shape, pool_size, neuron=Tanh()):
+        super().__init__(n_feature_map, filter_shape, neuron)
         self.pool_size = pool_size
         # pooling layer will be initiated after inputs shape is settled
         self.pooling_layer = None

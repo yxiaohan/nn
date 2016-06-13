@@ -23,8 +23,8 @@ class BaseNet(object):
         return len(data_set[0]) // batch_size
 
     @staticmethod
-    def init_cetptron_layers(layer_types: [CeptronLayer]):
-        return [CeptronLayer(*layer_type) for layer_type in layer_types]
+    def init_cetptron_layers(layer_types: [NeuronLayer]):
+        return [NeuronLayer(*layer_type) for layer_type in layer_types]
 
     @staticmethod
     def init_layers(inputs_shape, layer_types):
@@ -68,7 +68,7 @@ class BaseNet(object):
         self.connect()
         # self.reset_params()
         self.init_weights_baises()
-        self.weights, self.biases = self._get_weights_biases()
+        self.weights, self.biases = self._get_tf_weights_biases()
 
         # l1 and l2 regularization
         self.l1, self.l2 = self.init_regularization()
@@ -136,6 +136,8 @@ class BaseNet(object):
         # train
         print('init all variables...')
         tf.initialize_all_variables().run()
+        self._get_b()
+        self.save_np_params()
         print('init finished, now start training...')
         train_set, valid_set, test_set = data_sets
         train_set_x, train_set_y = train_set
@@ -150,16 +152,11 @@ class BaseNet(object):
                 mini_y = self._get_mini_batch(train_set_y, batch_size, batch_num)
                 train_step.run({self.x: mini_x, self.y: mini_y})
             speed_test.stop()
-            print(self.validation(valid_set))
-        print('test results: %f') % self.test(test_set)
+            print(type(self.test(valid_set)))
+            # self.save_np_params()
+        # print('test results: %f') % self.test(test_set)
 
-    def validation(self, valid_set):
-        return self._set_model(valid_set)
-
-    def test(self, test_set):
-        return self._set_model(test_set)
-
-    def _set_model(self, data_set):
+    def test(self, data_set):
         set_x, set_y = data_set
         correct_prediction = tf.equal(tf.argmax(self.y, 1), tf.argmax(self.p_y, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
@@ -192,35 +189,47 @@ class BaseNet(object):
 
     def reset_params(self):
         self.init_weights_baises()
-        self._set_weights_biases(*self._get_weights_biases())
+        self._set_weights_biases(*self._get_tf_weights_biases())
 
-    def save_params(self):
-        weights, biases = self._get_weights_biases()
-        with open(self.pickle_file, 'wb') as f:
-            pickle.dump((weights, biases), f, protocol=pickle.HIGHEST_PROTOCOL)
+    def save_np_params(self):
+        try:
+            np_weights = self.sess.run(self.weights)
+            np_biases = self.sess.run(self.biases)
+            with open(self.pickle_file, 'wb') as f:
+                pickle.dump((np_weights, np_biases), f, protocol=pickle.HIGHEST_PROTOCOL)
+        except tf.python.framework.errors.FailedPreconditionError:
+            print('saving failed because not all variables are initiated.')
 
-    def load_params(self):
+    def load_np_params(self):
         with open(self.pickle_file, 'rb') as f:
-            params = pickle.load(f)
-        self._set_weights_biases(*params)
+            np_params = pickle.load(f)
+        tf_params = [[tf.Variable(p) for p in np_param] for np_param in np_params]
+        # print(np_params[1])
+        self._set_weights_biases(*tf_params)
+        print('params loaded.')
 
-    def _get_weights_biases(self):
-        weights = []
-        biases = []
+    def _get_tf_weights_biases(self):
+        tf_weights = []
+        tf_biases = []
         for layer in self.weighted_layers:
-            weights.append(layer.w)
-            biases.append(layer.b)
-        return weights, biases
+            tf_weights.append(layer.w)
+            tf_biases.append(layer.b)
+        return tf_weights, tf_biases
 
     def _set_weights_biases(self, weights, biases):
         for i, layer in enumerate(self.weighted_layers):
-            layer.w.set_value(weights[i].get_value())
-            layer.b.set_value(biases[i].get_value())
-            # to make save / load / reset functional
-            self.weights[i].set_value(weights[i].get_value())
-            self.biases[i].set_value(biases[i].get_value())
 
-    def get_b(self):
-        print('get_b:')
-        layer = self.weighted_layers[1]
-        print(layer.b.get_value())
+            # to make save / load / reset functional
+            tf.initialize_variables([weights[i], biases[i]]).run()
+            self.sess.run(layer.w.assign(weights[i]))
+            self.sess.run(layer.b.assign(biases[i]))
+
+    def _get_b(self):
+        print('_get_b:')
+        layer = self.weighted_layers[0]
+        # init = tf.initialize_all_variables()
+        # sess = tf.Session()
+        # self.sess.run(init)
+        print(self.sess.run(layer.b))
+
+        # print(layer.b.get_value())

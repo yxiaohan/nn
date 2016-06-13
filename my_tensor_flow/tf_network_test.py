@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 from my_tensor_flow.tf_base_net import BaseNet
 from my_tensor_flow.tf_layers import *
-import my_tensor_flow.tf_ceptrons as tf_ceptrons
+import my_tensor_flow.tf_neurons as tf_neurons
 
 import base_layer
 import mnist
@@ -17,13 +17,13 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('data_dir', '../data/mnist', 'Directory for storing data')
 
 # mnist1 = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
-
+mn = mnist.MNIST()
 
 def train(net: BaseNet, n_epochs, batch_size, learning_rate=0.5, auto_load_mnist=True, **kwargs):
     print('layers:{!r}'.format(net.layers))
     print('loading data sets...')
     if auto_load_mnist:
-        mn = mnist.MNIST()
+
         train_set = mn.tf_train_set()
         valid_set = mn.tf_valid_set()
         test_set = mn.tf_test_set()
@@ -41,24 +41,28 @@ def train(net: BaseNet, n_epochs, batch_size, learning_rate=0.5, auto_load_mnist
 
 
 def test():
-    layers = [base_layer.DirectLayer((784,)), CeptronLayer(50, tf_ceptrons.Tanh()),
-              CeptronLayer(10, tf_ceptrons.SoftMax())]
-    # net = theano_base_net.BaseNet.net_from_layer_types((28,28), [(50, my_ceptron.Tanh()), (10, my_ceptron.TheanoSoftMax())])
+    layers = [base_layer.DirectLayer((784,)), NeuronLayer(50, tf_neurons.Relu()),
+              NeuronLayer(10, tf_neurons.SoftMax())]
+    # net = theano_base_net.BaseNet.net_from_layer_types((28,28), [(50, my_neuron.Tanh()), (10, my_neuron.TheanoSoftMax())])
     net = BaseNet(layers)
-    # net.get_b()
-    # net.save_params()
-    train(net, 1000, 1000)
-    # print('after training:')
-    # net.get_b()
+    # net._get_b()
+    print(net.weights)
+    # net.save_np_params()
+    train(net, 2, 1000)
+    print('after training:')
+    net._get_b()
+    net.load_np_params()
+    net._get_b()
+    print(net.test(mn.tf_valid_set()))
     # print('test before reset:{0}'.format(net.test_model()))
     # net.reset_params()
     #
     # print('test after reset:{0}'.format(net.test_model()))
-    # net.get_b()
+    # net._get_b()
     # # train(net, 1000, 600, learning_rate=0.01)
-    # net.load_params()
+    # net.load_np_params()
     # print('after loading:')
-    # net.get_b()
+    # net._get_b()
     # print('load best test:{0}'.format(net.test_model()))
     print('done')
 

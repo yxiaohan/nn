@@ -225,7 +225,7 @@ class BaseNet(object):
             self.biases[i].set_value(biases[i].get_value())
 
     def get_b(self):
-        print('get_b:')
+        print('_get_b:')
         layer = self.weighted_layers[1]
         print(layer.b.get_value())
         # print(layer.w.get_value())

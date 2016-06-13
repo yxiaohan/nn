@@ -3,7 +3,7 @@ import math
 import tensorflow as tf
 
 
-class Ceptron(object):
+class Neuron(object):
     @staticmethod
     def core_func(z):
         raise NotImplementedError
@@ -28,7 +28,7 @@ class Ceptron(object):
         return w
 
 
-class Sigmoid(Ceptron):
+class Sigmoid(Neuron):
     @staticmethod
     def core_func(z):
         return tf.nn.sigmoid(z)
@@ -40,13 +40,13 @@ class Sigmoid(Ceptron):
         return w_values
 
 
-class SoftMax(Ceptron):
+class SoftMax(Neuron):
     @staticmethod
     def core_func(z):
         return tf.nn.softmax(z)
 
 
-class Tanh(Ceptron):
+class Tanh(Neuron):
     @staticmethod
     def core_func(z):
         return tf.nn.tanh(z)
@@ -58,7 +58,7 @@ class Tanh(Ceptron):
         return w_values
 
 
-class Relu(Ceptron):
+class Relu(Neuron):
     @staticmethod
     def core_func(z):
         return tf.nn.relu(z)
