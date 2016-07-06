@@ -41,14 +41,16 @@ def train(net: BaseNet, n_epochs, batch_size, learning_rate=0.5, auto_load_mnist
 
 
 def test():
-    layers = [base_layer.DirectLayer((784,)), NeuronLayer(50, tf_neurons.Relu()),
+    # layers = [base_layer.DirectLayer((784,)), NeuronLayer(50, tf_neurons.Relu()),
+    #           NeuronLayer(10, tf_neurons.SoftMax())]
+    layers = [base_layer.DirectLayer((28, 28)), Conv2DPoolingLayer(3, (5, 5), (2, 2)), NeuronLayer(50, tf_neurons.Relu()),
               NeuronLayer(10, tf_neurons.SoftMax())]
-    # net = theano_base_net.BaseNet.net_from_layer_types((28,28), [(50, my_neuron.Tanh()), (10, my_neuron.TheanoSoftMax())])
+
     net = BaseNet(layers)
     # net._get_b()
     print(net.weights)
     # net.save_np_params()
-    train(net, 2, 1000)
+    train(net, 200, 64)
     print('after training:')
     net._get_b()
     net.load_np_params()

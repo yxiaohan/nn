@@ -32,7 +32,11 @@ class NeuronLayer(AbstractLayer):
 
     def forward(self, inputs, **kwargs):
         # inputs = inputs.flatten(2)
+        common.print_func_name(self.forward)
+        print(self.get_inputs_shape())
         print(self.w.get_shape())
+
+        inputs = tf.reshape(inputs, [-1, np.prod(self.get_inputs_shape())])
         z = tf.matmul(inputs, self.w) + self.b
         return self.neuron.core_func(z)
 
@@ -79,18 +83,20 @@ class Conv2DLayer(NeuronLayer):
         """
         in convlayers, the outputs_shape and inputs_shape are linked, thus will be set at same time
         transfer the common inputs_shape (height), width), n_input_maps) into
-        a length 3 tuple(n_input_maps, height, width)
+        a length 3 tuple(height, width, n_feature_map)
         """
         if len(inputs_shape) == 1:
-            self._inputs_shape = (1, inputs_shape[0], 1)
+            self._inputs_shape = (inputs_shape[0], 1, 1)
         elif len(inputs_shape) == 2:
-            self._inputs_shape = (1, ) + inputs_shape
+            self._inputs_shape = inputs_shape + (1, )
         elif len(inputs_shape) == 3:
-            self._inputs_shape = (inputs_shape[2], inputs_shape[0], inputs_shape[1])
+            # self._inputs_shape = (inputs_shape[2], inputs_shape[0], inputs_shape[1])
+            self._inputs_shape = inputs_shape
         else:
             raise TypeError('inputs_shape length should be 1-3 (height), width), n_input_maps)')
 
-        n_input_maps, height, width = self._inputs_shape
+        height, width, n_feature_map = self._inputs_shape
+        common.print_func_name(self.set_inputs_shape)
         print(self._inputs_shape, self.filter_shape)
         # the shape of outputs should be (length, width, n_feature_map)
         self.set_outputs_shape((height - self.filter_shape[0] + 1,
@@ -98,13 +104,14 @@ class Conv2DLayer(NeuronLayer):
 
     def init_weights(self):
         n_filter_cells = np.prod(self.filter_shape)
-        n_inputs = self.get_inputs_shape()[0] * n_filter_cells
+        n_input_features = self.get_inputs_shape()[-1]
+        n_inputs = n_input_features * n_filter_cells
         n_outputs = self.n_feature_map * n_filter_cells
-        shape = (self.n_feature_map, self._inputs_shape[0]) + self.filter_shape
+        shape = self.filter_shape + (n_input_features, self.n_feature_map)
         self.w = self.neuron.init_weights(n_inputs, n_outputs, shape)
 
     def init_biases(self):
-        self.b = tf.Variable(tf.zeros(self.n_feature_map), name='b')
+        self.b = tf.Variable(tf.zeros([self.n_feature_map]), name='b')
 
     def convolution(self, inputs):
         # print(inputs.shape)
@@ -113,22 +120,22 @@ class Conv2DLayer(NeuronLayer):
         # n_input_maps, height, width = self._inputs_shape
         # x = inputs.reshape(batch_size, n_input_maps, height, width)
         input_shape = (-1, ) + super().get_inputs_shape()
+        common.print_func_name(self.convolution)
         print(input_shape)
-        inputs = inputs.reshape(input_shape)
+        inputs = tf.reshape(inputs, input_shape)
         # filter_shape_4d = (self.n_feature_map, self._inputs_shape[0]) + self.filter_shape
         z = tf.nn.conv2d(input=inputs, filter=self.w, strides=[1, 1, 1, 1], padding='VALID')
 
         return z
 
     def pre_forward(self, inputs):
+        # inputs = tf.reshape(inputs, self.get_inputs_shape())
         z = self.convolution(inputs)
         return z
 
     def forward(self, inputs, **kwargs):
         z = self.pre_forward(inputs)
         z = tf.nn.relu(z + self.b)
-        # z = z.flatten(2)
-        # reshape to 2d
         return z
 
 
@@ -143,6 +150,8 @@ class Conv2DPoolingLayer(Conv2DLayer):
         super().set_inputs_shape(inputs_shape)
         pool_size = self.pool_size
         outputs_shape = self.get_outputs_shape()
+        print('outputs_shape:')
+        print(outputs_shape)
         self.pooling_layer = MaxPoolingLayer(outputs_shape[:len(pool_size)], pool_size)
         self.set_outputs_shape(self.pooling_layer.get_outputs_shape() + outputs_shape[len(pool_size):])
 

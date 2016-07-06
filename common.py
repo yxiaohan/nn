@@ -9,6 +9,10 @@ def shuffle_in_unison(a, b):
     np.random.shuffle(b)
 
 
+def print_func_name(func):
+    print(func.__name__)
+
+
 class SpeedTest(object):
     def __init__(self):
         self._start_time = None

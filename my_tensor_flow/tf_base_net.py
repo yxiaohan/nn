@@ -74,15 +74,14 @@ class BaseNet(object):
         self.l1, self.l2 = self.init_regularization()
 
         # init tf variables
-        # print([None] + list(self.layers[0].get_inputs_shape()))
-        self.x = tf.placeholder(tf.float32, shape=(None,) + self.layers[0].get_inputs_shape())
-        self.y = tf.placeholder(tf.float32, shape=(None,) + self.layers[-1].get_outputs_shape())
+        self.x = tf.placeholder(tf.float32, shape=(None,) + self.layers[0].get_inputs_shape(), name='x')
+        self.y = tf.placeholder(tf.float32, shape=(None,) + self.layers[-1].get_outputs_shape(), name='y')
         self.p_y = self.forward(self.x)
 
         # set early stopping patience
         self.patience = 20
         self.patience_inc_coef = -0.1
-        self.lest_valid_error = np.inf
+        self.best_valid_result = np.inf
 
     def get_weighted_layers(self):
         weighted_layers = []
@@ -121,17 +120,17 @@ class BaseNet(object):
             a = layer.forward(a, batch_size=batch_size)
         return a
 
-    def train(self, data_sets, batch_size, n_epochs, learning_rate=0.5,
+    def train(self, data_sets, batch_size, n_epochs, learning_rate=0.03,
               cost_func=tfu.Costs.cross_entropy, l1_a=0.0, l2_a=0.0001):
 
         cost = cost_func(self.p_y, self.y) + self.l1 * l1_a + self.l2 * l2_a
 
         # set early stopping patience
         self.patience = 20
-        self.lest_valid_error = np.inf
+        self.best_valid_result = 0
 
         # set up training step
-        train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
+        train_step = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
         # train
         print('init all variables...')
@@ -152,8 +151,15 @@ class BaseNet(object):
                 mini_y = self._get_mini_batch(train_set_y, batch_size, batch_num)
                 train_step.run({self.x: mini_x, self.y: mini_y})
             speed_test.stop()
-            print(type(self.test(valid_set)))
-            # self.save_np_params()
+            valid_result = self.test(valid_set).item()
+            print('validation result: %f' % valid_result)
+            try:
+                if self.is_new_best(valid_result):
+                    print('new best found, saving...')
+                    self.save_np_params()
+            except UserWarning as e:
+                print(e)
+                return
         # print('test results: %f') % self.test(test_set)
 
     def test(self, data_set):
@@ -163,24 +169,24 @@ class BaseNet(object):
         model = accuracy.eval({self.x: set_x, self.y: set_y})
         return model
 
-    def is_new_best(self, valid_error):
+    def is_new_best(self, valid_result):
         """
-        :param valid_error: errors found in validation. should always >=0
+        :param valid_result: errors found in validation. should always >=0 and <=1
         """
-        assert valid_error >= 0
-        assert self.lest_valid_error >= 0
+        assert 1 >= valid_result >= 0
+        assert self.best_valid_result >= 0
 
         improvement_threshold = 0.005
-        improvement = (self.lest_valid_error - valid_error) / valid_error
+        improvement = (valid_result - self.best_valid_result) / valid_result
 
         result = False
         if improvement > improvement_threshold:
-            self.lest_valid_error = valid_error
+            self.best_valid_result = valid_result
             self.patience += 3
             result = True
         else:
             self.patience *= 1 + self.patience_inc_coef
-        # print('improvement:{1}   patience left: {0}'.format(self.patience, improvement))
+        print('improvement:{1}   patience left: {0}'.format(self.patience, improvement))
 
         if self.patience < 1:
             raise UserWarning('patience lost')
@@ -197,6 +203,7 @@ class BaseNet(object):
             np_biases = self.sess.run(self.biases)
             with open(self.pickle_file, 'wb') as f:
                 pickle.dump((np_weights, np_biases), f, protocol=pickle.HIGHEST_PROTOCOL)
+            print('params saved.')
         except tf.python.framework.errors.FailedPreconditionError:
             print('saving failed because not all variables are initiated.')
 
@@ -218,18 +225,13 @@ class BaseNet(object):
 
     def _set_weights_biases(self, weights, biases):
         for i, layer in enumerate(self.weighted_layers):
-
             # to make save / load / reset functional
             tf.initialize_variables([weights[i], biases[i]]).run()
             self.sess.run(layer.w.assign(weights[i]))
             self.sess.run(layer.b.assign(biases[i]))
 
     def _get_b(self):
-        print('_get_b:')
+        common.print_func_name(self._get_b)
         layer = self.weighted_layers[0]
-        # init = tf.initialize_all_variables()
-        # sess = tf.Session()
-        # self.sess.run(init)
         print(self.sess.run(layer.b))
 
-        # print(layer.b.get_value())

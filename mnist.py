@@ -23,6 +23,7 @@ class MNIST(object):
     @staticmethod
     def tf_convert_data_set(data, limit=None):
         x, y = data
+        x = x.reshape(x.shape[0], 28, 28)
         y1 = np.zeros(y.shape + (10,))
         for i, n in enumerate(y):
             y1[i][n] = 1

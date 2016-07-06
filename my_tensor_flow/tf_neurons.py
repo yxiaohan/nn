@@ -2,6 +2,8 @@ import numpy as np
 import math
 import tensorflow as tf
 
+import common
+
 
 class Neuron(object):
     @staticmethod
@@ -65,6 +67,8 @@ class Relu(Neuron):
 
     @staticmethod
     def _init_weight_values(n_inputs, n_outputs, shape):
+        common.print_func_name(Relu._init_weight_values)
+        print(shape)
         w_values = tf.truncated_normal(shape=shape, stddev=1. / math.sqrt(float(shape[0])))
         return w_values
 
