@@ -67,7 +67,7 @@ class Logistic(theano_base_net.BaseNet):
 
 lo = Logistic([(28 * 28, None), (50, my_ceptron.Tanh()), (10, my_ceptron.TheanoSoftMax())])
 # lo._get_b()
-# lo.save_np_params()
+# lo.save_params()
 lo.train(1000, 600, learning_rate=0.01)
 print('after training:')
 # lo._get_b()

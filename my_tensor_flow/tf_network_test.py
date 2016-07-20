@@ -19,7 +19,8 @@ flags.DEFINE_string('data_dir', '../data/mnist', 'Directory for storing data')
 # mnist1 = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
 mn = mnist.MNIST()
 
-def train(net: BaseNet, n_epochs, batch_size, learning_rate=0.5, auto_load_mnist=True, **kwargs):
+
+def train(net: BaseNet, n_epochs, batch_size=64, learning_rate=1e-3, auto_load_mnist=True, **kwargs):
     print('layers:{!r}'.format(net.layers))
     print('loading data sets...')
     if auto_load_mnist:
@@ -41,19 +42,18 @@ def train(net: BaseNet, n_epochs, batch_size, learning_rate=0.5, auto_load_mnist
 
 
 def test():
-    # layers = [base_layer.DirectLayer((784,)), NeuronLayer(50, tf_neurons.Relu()),
-    #           NeuronLayer(10, tf_neurons.SoftMax())]
-    layers = [base_layer.DirectLayer((28, 28)), Conv2DPoolingLayer(3, (5, 5), (2, 2)), NeuronLayer(50, tf_neurons.Relu()),
+    layers = [base_layer.DirectLayer((28, 28)), NeuronLayer(50, tf_neurons.Relu()),
               NeuronLayer(10, tf_neurons.SoftMax())]
+    # layers = [base_layer.DirectLayer((28, 28)), Conv2DPoolingLayer(32, (5, 5), (2, 2)), NeuronLayer(50, tf_neurons.Relu()),
+    #           NeuronLayer(10, tf_neurons.SoftMax())]
 
     net = BaseNet(layers)
     # net._get_b()
-    print(net.weights)
-    # net.save_np_params()
+    # net.save_params()
     train(net, 200, 64)
     print('after training:')
     net._get_b()
-    net.load_np_params()
+    net.load_params()
     net._get_b()
     print(net.test(mn.tf_valid_set()))
     # print('test before reset:{0}'.format(net.test_model()))
@@ -62,7 +62,7 @@ def test():
     # print('test after reset:{0}'.format(net.test_model()))
     # net._get_b()
     # # train(net, 1000, 600, learning_rate=0.01)
-    # net.load_np_params()
+    # net.load_params()
     # print('after loading:')
     # net._get_b()
     # print('load best test:{0}'.format(net.test_model()))

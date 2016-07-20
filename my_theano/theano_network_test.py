@@ -51,7 +51,7 @@ def train(net: theano_base_net.BaseNet, n_epochs, batch_size, learning_rate=0.3,
             if net.is_new_best(valid_errors):
                 last_test_score = np.mean([net.test_model(n) for n in range(n_test_batches)])
                 print('new best found, testing:{0}'.format(last_test_score))
-                net.save_np_params()
+                net.save_params()
         except UserWarning as e:
             print(e)
             break
@@ -70,7 +70,7 @@ def test():
     # net = theano_base_net.BaseNet.net_from_layer_types((28,28), [(50, my_ceptron.Tanh()), (10, my_ceptron.TheanoSoftMax())])
     net = theano_base_net.BaseNet(layers)
     # net._get_b()
-    # net.save_np_params()
+    # net.save_params()
     train(net, 1000, 20, learning_rate=0.01)
     # print('after training:')
     # net._get_b()
@@ -80,7 +80,7 @@ def test():
     # print('test after reset:{0}'.format(net.test_model()))
     # net._get_b()
     # # train(net, 1000, 600, learning_rate=0.01)
-    # net.load_np_params()
+    # net.load_params()
     # print('after loading:')
     # net._get_b()
     # print('load best test:{0}'.format(net.test_model()))
